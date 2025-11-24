@@ -516,6 +516,12 @@ impl RouterConfigBuilder {
         self
     }
 
+    /// Set use_mock_tokenizer flag 
+    pub fn use_mock_tokenizer(mut self, use_mock: bool) -> Self {  
+        self.config.use_mock_tokenizer = use_mock;  
+        self  
+    }
+
     /// Set log level if Some
     pub fn maybe_log_level(mut self, level: Option<impl Into<String>>) -> Self {
         self.config.log_level = level.map(|l| l.into());

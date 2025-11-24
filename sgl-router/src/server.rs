@@ -830,29 +830,36 @@ pub async fn startup(config: ServerConfig) -> Result<(), Box<dyn std::error::Err
         config.router_config.connection_mode,
         ConnectionMode::Grpc { .. }
     ) {
-        let tokenizer_path = config
-            .router_config
-            .tokenizer_path
-            .clone()
-            .or_else(|| config.router_config.model_path.clone())
-            .ok_or_else(|| {
-                "gRPC mode requires either --tokenizer-path or --model-path to be specified"
-                    .to_string()
-            })?;
-
-        let base_tokenizer =
-                tokenizer_factory::create_tokenizer_with_chat_template_blocking(
-                    &tokenizer_path,
-                    config.router_config.chat_template.as_deref(),
-                )
-                .map_err(|e| {
-                    format!(
-                        "Failed to create tokenizer from '{}': {}. \
-                        Ensure the path is valid and points to a tokenizer file (tokenizer.json) \
-                        or a HuggingFace model ID. For directories, ensure they contain tokenizer files.",
-                        tokenizer_path, e
-                    )
-                })?;
+        // 根据use_mock_tokenizer决定是否需要tokenizer_path  
+        let base_tokenizer = if config.router_config.use_mock_tokenizer {  
+            // 使用MockTokenizer,不需要tokenizer_path  
+            info!("Using MockTokenizer for testing");  
+            Arc::new(crate::tokenizer::mock::MockTokenizer::new()) as Arc<dyn Tokenizer>  
+        } else {  
+            // 使用真实tokenizer,需要tokenizer_path  
+            let tokenizer_path = config  
+                .router_config  
+                .tokenizer_path  
+                .clone()  
+                .or_else(|| config.router_config.model_path.clone())  
+                .ok_or_else(|| {  
+                    "gRPC mode requires either --tokenizer-path or --model-path to be specified"  
+                        .to_string()  
+                })?;  
+    
+            tokenizer_factory::create_tokenizer_with_chat_template_blocking(  
+                &tokenizer_path,  
+                config.router_config.chat_template.as_deref(),  
+            )  
+            .map_err(|e| {  
+                format!(  
+                    "Failed to create tokenizer from '{}': {}. \
+                    Ensure the path is valid and points to a tokenizer file (tokenizer.json) \
+                    or a HuggingFace model ID. For directories, ensure they contain tokenizer files.",  
+                    tokenizer_path, e  
+                )  
+            })?  
+        };
 
         // Conditionally wrap with caching layer if at least one cache is enabled
         let tokenizer = if config.router_config.tokenizer_cache.enable_l0
@@ -869,6 +876,7 @@ pub async fn startup(config: ServerConfig) -> Result<(), Box<dyn std::error::Err
             // Use base tokenizer directly without caching
             Some(base_tokenizer)
         };
+
         let reasoning_parser_factory = Some(ReasoningParserFactory::new());
         let tool_parser_factory = Some(ToolParserFactory::new());
 

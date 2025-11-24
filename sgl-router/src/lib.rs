@@ -209,6 +209,7 @@ struct Router {
     oracle_config: Option<PyOracleConfig>,
     enable_cache_sync: bool,  
     sync_interval_secs: u64,
+    use_mock_tokenizer: bool,
 }
 
 impl Router {
@@ -363,7 +364,8 @@ impl Router {
             .dp_aware(self.dp_aware)
             .retries(!self.disable_retries)
             .circuit_breaker(!self.disable_circuit_breaker)
-            .igw(self.enable_igw);
+            .igw(self.enable_igw)
+            .use_mock_tokenizer(self.use_mock_tokenizer);
 
         builder.build()
     }
@@ -441,6 +443,7 @@ impl Router {
         oracle_config = None,
         enable_cache_sync = false,
         sync_interval_secs = 600,
+        use_mock_tokenizer = false,
     ))]
     #[allow(clippy::too_many_arguments)]
     fn new(
@@ -512,6 +515,7 @@ impl Router {
         oracle_config: Option<PyOracleConfig>,
         enable_cache_sync: bool, 
         sync_interval_secs: u64,
+        use_mock_tokenizer: bool,
     ) -> PyResult<Self> {
         let mut all_urls = worker_urls.clone();
 
@@ -597,6 +601,7 @@ impl Router {
             oracle_config,
             enable_cache_sync,
             sync_interval_secs,
+            use_mock_tokenizer,
         })
     }
 

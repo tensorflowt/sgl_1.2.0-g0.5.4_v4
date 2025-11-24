@@ -85,6 +85,7 @@ pub struct RouterConfig {
     /// Tokenizer cache configuration
     #[serde(default)]
     pub tokenizer_cache: TokenizerCacheConfig,
+    pub use_mock_tokenizer: bool,  // 用于mock数据测试的开关
 }
 
 /// Tokenizer cache configuration
@@ -508,6 +509,7 @@ impl Default for RouterConfig {
             reasoning_parser: None,
             tool_call_parser: None,
             tokenizer_cache: TokenizerCacheConfig::default(),
+            use_mock_tokenizer: false,
         }
     }
 }

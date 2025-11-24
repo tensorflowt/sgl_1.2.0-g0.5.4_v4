@@ -321,6 +321,9 @@ struct CliArgs {
     
     #[arg(long, default_value = "600")]  
     sync_interval_secs: u64,
+
+    #[arg(long)]  
+    use_mock_tokenizer: bool,
 }
 
 enum OracleConnectSource {
@@ -605,7 +608,8 @@ impl CliArgs {
             .dp_aware(self.dp_aware)
             .retries(!self.disable_retries)
             .circuit_breaker(!self.disable_circuit_breaker)
-            .igw(self.enable_igw);
+            .igw(self.enable_igw)
+            .use_mock_tokenizer(self.use_mock_tokenizer);
 
         builder.build()
     }
