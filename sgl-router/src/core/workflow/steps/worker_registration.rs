@@ -26,6 +26,7 @@ use crate::{
         DPAwareWorkerBuilder, HealthConfig, Worker, WorkerType,
     },
     grpc_client::SglangSchedulerClient,
+    policies::CacheAwarePolicy,
     protocols::worker_spec::WorkerConfigRequest,
     server::AppContext,
 };
@@ -742,6 +743,39 @@ impl StepExecutor for UpdatePoliciesStep {
                 "Updated policies for worker {} (model: {})",
                 config.url, model_id
             );
+
+            // 每个 prefill worker 注册时自动启动缓存同步
+            if let Some(worker_type_str) = &config.worker_type {  
+                if worker_type_str == "prefill" {  
+                    // 获取 prefill 策略  
+                    let prefill_policy = app_context.policy_registry.get_prefill_policy();  
+                      
+                    // 尝试转换为 CacheAwarePolicy  
+                    if let Some(cache_aware) = prefill_policy.as_any().downcast_ref::<CacheAwarePolicy>() {  
+                        // 检查是否启用了缓存同步  
+                        if cache_aware.is_cache_sync_enabled() {  
+                            // 获取 tokenizer  
+                            if let Some(tokenizer) = &app_context.tokenizer {  
+                                info!(  
+                                    "Starting cache sync for prefill worker: {} (model: {})",  
+                                    worker.url(),  
+                                    model_id  
+                                );  
+                                  
+                                info!("start cache sync!");
+                                // 启动缓存同步  
+                                cache_aware.start_cache_sync(  
+                                    worker.url().to_string(),  
+                                    tokenizer.clone()  
+                                );  
+                                info!("cache sync started!");
+                            } else {  
+                                warn!("Tokenizer not available, cannot start cache sync");  
+                            }  
+                        }  
+                    }  
+                }  
+            }
         }
 
         Ok(StepResult::Success)

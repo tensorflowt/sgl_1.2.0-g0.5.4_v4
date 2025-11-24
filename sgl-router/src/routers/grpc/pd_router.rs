@@ -95,32 +95,6 @@ impl GrpcPDRouter {
             ctx.configured_tool_parser.clone(),
             ctx.configured_reasoning_parser.clone(),
         );
-
-        info!("Starting cache sync...");
-        // 启动缓存同步  
-        let prefill_policy = policy_registry.get_prefill_policy(); 
-        info!("Starting cache sync with prefill_policy: {:?}", prefill_policy);
-        // 尝试将其转换为 CacheAwarePolicy  
-        if let Some(cache_aware) = prefill_policy.as_any().downcast_ref::<CacheAwarePolicy>() {  
-            // 检查是否启用了缓存同步 
-            if cache_aware.is_cache_sync_enabled() { 
-                // 获取第一个 prefill worker URL  
-                let prefill_workers = worker_registry.get_workers_filtered(  
-                    None,  
-                    Some(WorkerType::Prefill { bootstrap_port: None }),  
-                    None,  
-                    false,  
-                );  
-                  
-                if let Some(worker) = prefill_workers.first() {  
-                    cache_aware.start_cache_sync(  
-                    worker.url().to_string(),  
-                    tokenizer.clone()  
-                );    
-                }  
-            }  
-        }
-        info!("GrpcPDRouter created successfully.");
         
         Ok(GrpcPDRouter {
             worker_registry,
